@@ -21,10 +21,10 @@ if (strlen($title) < 100) {
     echo json_encode(['success' => false, 'error' => 'Task title must be at least 100 characters']);
     exit();
 }
-
+// SQL injection prevention
 try {
-    $stmt = $pdo->prepare("INSERT INTO tasks (user_id, title, description) VALUES (" . $_SESSION['user_id'] . ", '$title', '$description')");
-    $stmt->execute();
+    $stmt = $pdo->prepare("INSERT INTO tasks (user_id, title, description) VALUES (?, ?, ?)");
+    $stmt->execute([$_SESSION['user_id'], $title, $description]);
     
     $taskId = $pdo->lastInsertId();
     
