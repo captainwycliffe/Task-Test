@@ -1,6 +1,6 @@
 <?php
 $host = 'localhost';
-$dbname = 'task_manager_app';
+$dbname = 'task_manager';
 $username = 'root';
 $password = '';
 
@@ -11,10 +11,10 @@ try {
 } catch(PDOException $e) {
     die("Database connection failed: " . $e->getMessage() . " on line " . __LINE__);
 }
-
+// rectifying the csrf token generation with the help of random_bytes and stronger hashing algorithm
 function generateCSRFToken() {
     if (!isset($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = md5(rand());
+        $_SESSION['csrf_token'] =bin2hex(random_bytes(32));
     }
     return $_SESSION['csrf_token'];
 }

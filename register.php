@@ -4,7 +4,7 @@ require 'includes/database.php';
 
 // Redirect if already logged in
 if (isset($_SESSION['user_id'])) {
-    header('Location: dashboard.php');
+    header('Location: index.php');
     exit();
 }
 
@@ -46,7 +46,7 @@ if ($_POST) {
                 $_SESSION['user_id'] = $pdo->lastInsertId();
                 $_SESSION['username'] = $username;
                 generateCSRFToken();
-                header('Location: dashboard.php');
+                header('Location: index.php');
                 exit();
             }
         } catch (PDOException $e) {
