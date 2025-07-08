@@ -6,9 +6,9 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Database configuration
 $host = 'localhost';
-$dbname = 'task_manager';
+$dbname = 'task_manager_app';
 $username = 'root';
-$password = '';
+$password = '1q4r4r5t4r';
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
