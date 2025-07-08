@@ -306,34 +306,56 @@ foreach ($tasks as $task) {
                 </div>
             <?php else: ?>
                 <?php foreach ($tasks as $task): ?>
-                    <div class="task-card <?= $task['status'] === 'completed' ? 'completed' : '' ?>" id="task-<?= $task['id'] ?>">
-                        <div class="task-header">
-                            <h4 class="task-title"><?= htmlspecialchars($task['title']) ?></h4>
-                            <span class="task-status status-<?= $task['status'] ?>">
-                                <?= $task['status'] ?>
-                            </span>
-                        </div>
-                        
-                        <?php if ($task['description']): ?>
-                            <div class="task-description">
-                                <?= nl2br(htmlspecialchars($task['description'])) ?>
-                            </div>
-                        <?php endif; ?>
-                        
-                        <div class="task-meta">
-                            Created: <?= date('M j, Y g:i A', strtotime($task['created_at'])) ?>
-                        </div>
-                        
-                        <div class="task-actions">
-    <button class="btn btn-secondary toggle-btn" onclick="toggleStatus(<?= $task['id'] ?>)">
-        <?= $task['status'] === 'pending' ? 'Mark Complete' : 'Mark Pending' ?>
-    </button>
-    <button class="btn btn-danger" onclick="deleteTask(<?= $task['id'] ?>)">
-        Delete
-    </button>
+                   <div class="task-card <?= $task['status'] === 'completed' ? 'completed' : '' ?>" id="task-<?= $task['id'] ?>">
+    <div class="task-header">
+        <h4 class="task-title"><?= htmlspecialchars($task['title']) ?></h4>
+        <span class="task-status status-<?= $task['status'] ?>">
+            <?= htmlspecialchars($task['status']) ?>
+        </span>
+    </div>
+
+    <?php if (!empty($task['description'])): ?>
+        <div class="task-description">
+            <?= nl2br(htmlspecialchars($task['description'])) ?>
+        </div>
+    <?php endif; ?>
+
+    <div class="task-meta">
+        <p>Created: <?= date('M j, Y g:i A', strtotime($task['created_at'])) ?></p>
+
+        <?php if (!empty($task['due_date'])): ?>
+            <p>Due: <strong><?= date('M j, Y', strtotime($task['due_date'])) ?></strong></p>
+        <?php endif; ?>
+
+        <?php if (!empty($task['priority'])): ?>
+            <p>
+                Priority:
+                <span class="priority-badge priority-<?= $task['priority'] ?>">
+                    <?= ucfirst($task['priority']) ?>
+                </span>
+            </p>
+        <?php endif; ?>
+
+        <?php if (!empty($task['attachment'])): ?>
+            <p>
+                Attachment:
+                <a href="<?= htmlspecialchars($task['attachment']) ?>" target="_blank" class="attachment-link">
+                    Download
+                </a>
+            </p>
+        <?php endif; ?>
+    </div>
+
+    <div class="task-actions">
+        <button class="btn btn-secondary toggle-btn" onclick="toggleStatus(<?= $task['id'] ?>)">
+            <?= $task['status'] === 'pending' ? 'Mark Complete' : 'Mark Pending' ?>
+        </button>
+        <button class="btn btn-danger" onclick="deleteTask(<?= $task['id'] ?>)">
+            Delete
+        </button>
+    </div>
 </div>
 
-                    </div>
                 <?php endforeach; ?>
             <?php endif; ?>
         </div>
