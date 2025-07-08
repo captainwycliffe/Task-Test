@@ -16,16 +16,43 @@ if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
 // ✅ Sanitize and validate input
 $title = sanitizeInput($_POST['title'] ?? '');
 $description = sanitizeInput($_POST['description'] ?? '');
+$description = sanitizeInput($_POST['description'] ?? '');
+$dueDate = $_POST['due_date'] ?? null;
+$priority = $_POST['priority'] ?? 'medium';
+$attachmentPath = null;
 
 if (strlen($title) < 3) {
     echo json_encode(['success' => false, 'error' => 'Task title must be at least 3 characters']);
     exit();
 }
 
+// Handle file upload
+$attachmentPath = null;
+
+if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ERR_OK) {
+    $uploadDir = __DIR__ . '/../uploads/';
+    
+    // ✅ Create the uploads directory if it doesn't exist
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true); // 0755 permissions, recursive creation
+    }
+
+    // ✅ Generate a unique filename
+    $originalName = basename($_FILES['attachment']['name']);
+    $filename = uniqid('task_', true) . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalName);
+    $targetPath = $uploadDir . $filename;
+
+    // ✅ Move the uploaded file
+    if (move_uploaded_file($_FILES['attachment']['tmp_name'], $targetPath)) {
+        $attachmentPath = 'uploads/' . $filename;
+    }
+}
+
+
 try {
     // ✅ Use parameterized query to prevent SQL injection
-    $stmt = $pdo->prepare("INSERT INTO tasks (user_id, title, description) VALUES (?, ?, ?)");
-    $stmt->execute([$_SESSION['user_id'], $title, $description]);
+$stmt = $pdo->prepare("INSERT INTO tasks (user_id, title, description, due_date, priority, attachment) VALUES (?, ?, ?, ?, ?, ?)");
+$stmt->execute([$_SESSION['user_id'], $title, $description, $dueDate, $priority, $attachmentPath]);
 
     $taskId = $pdo->lastInsertId();
 
