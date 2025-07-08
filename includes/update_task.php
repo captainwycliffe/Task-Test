@@ -15,6 +15,7 @@ if (!isset($input['csrf_token']) || !verifyCSRFToken($input['csrf_token'])) {
     exit();
 }
 
+
 // Check task ownership
 $stmt = $pdo->prepare("SELECT status FROM tasks WHERE id = ? AND user_id = ?");
 $stmt->execute([$taskId, $_SESSION['user_id']]);
