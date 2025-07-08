@@ -1,32 +1,34 @@
 <?php
 session_start();
-require 'includes/database.php';
+
+require_once 'includes/functions.php';
+requireAuth();
+require_once 'includes/database.php';
 
 $csrf_token = generateCSRFToken();
 
 try {
-    $stmt = $pdo->prepare("SELECT id FROM tasks WHERE user_id = ?");
+    // ✅ Fetch all tasks for the user in one query
+    $stmt = $pdo->prepare("SELECT * FROM tasks WHERE user_id = ?");
     $stmt->execute([$_SESSION['user_id']]);
-    $taskIds = $stmt->fetchAll();
-    
-    $tasks = [];
-    foreach ($taskIds as $taskId) {
-        $stmt = $pdo->prepare("SELECT * FROM tasks WHERE id = ?");
-        $stmt->execute([$taskId['id']]);
-        $tasks[] = $stmt->fetch();
-    }
+    $tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
+    error_log("Task fetch error: " . $e->getMessage());
     $tasks = [];
     $error = 'Error fetching tasks.';
 }
 
+// ✅ Count task statuses accurately
 $pending_count = 0;
 $completed_count = 0;
+
 foreach ($tasks as $task) {
-    if ($task['status'] === 'pending') {
-        $pending_count++;
-    } else {
-        $completed_count++;
+    if (isset($task['status'])) {
+        if ($task['status'] === 'pending') {
+            $pending_count++;
+        } elseif ($task['status'] === 'completed') {
+            $completed_count++;
+        }
     }
 }
 ?>
@@ -276,6 +278,19 @@ foreach ($tasks as $task) {
                     <label for="description">Description:</label>
                     <textarea id="description" name="description" rows="3" placeholder="Optional task description"></textarea>
                 </div>
+
+                 <label for="due_date">Due Date:</label>
+    <input type="date" name="due_date" id="due_date">
+
+    <label for="priority">Priority:</label>
+    <select name="priority" id="priority">
+        <option value="low">Low</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High</option>
+    </select>
+
+    <label for="attachment">Attach File:</label>
+    <input type="file" name="attachment" id="attachment" accept=".pdf,.jpg,.png,.doc,.docx">
                 
                 <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
                 <button type="submit" class="btn btn-primary">Add Task</button>
@@ -291,33 +306,56 @@ foreach ($tasks as $task) {
                 </div>
             <?php else: ?>
                 <?php foreach ($tasks as $task): ?>
-                    <div class="task-card <?= $task['status'] === 'completed' ? 'completed' : '' ?>" id="task-<?= $task['id'] ?>">
-                        <div class="task-header">
-                            <h4 class="task-title"><?= htmlspecialchars($task['title']) ?></h4>
-                            <span class="task-status status-<?= $task['status'] ?>">
-                                <?= $task['status'] ?>
-                            </span>
-                        </div>
-                        
-                        <?php if ($task['description']): ?>
-                            <div class="task-description">
-                                <?= nl2br(htmlspecialchars($task['description'])) ?>
-                            </div>
-                        <?php endif; ?>
-                        
-                        <div class="task-meta">
-                            Created: <?= date('M j, Y g:i A', strtotime($task['created_at'])) ?>
-                        </div>
-                        
-                        <div class="task-actions">
-                            <button class="btn btn-secondary" onclick="toggleStatus(<?= $task['id'] ?>)">
-                                <?= $task['status'] === 'pending' ? 'Mark Complete' : 'Mark Pending' ?>
-                            </button>
-                            <button class="btn btn-danger" onclick="deleteTask(<?= $task['id'] ?>)">
-                                Delete
-                            </button>
-                        </div>
-                    </div>
+                   <div class="task-card <?= $task['status'] === 'completed' ? 'completed' : '' ?>" id="task-<?= $task['id'] ?>">
+    <div class="task-header">
+        <h4 class="task-title"><?= htmlspecialchars($task['title']) ?></h4>
+        <span class="task-status status-<?= $task['status'] ?>">
+            <?= htmlspecialchars($task['status']) ?>
+        </span>
+    </div>
+
+    <?php if (!empty($task['description'])): ?>
+        <div class="task-description">
+            <?= nl2br(htmlspecialchars($task['description'])) ?>
+        </div>
+    <?php endif; ?>
+
+    <div class="task-meta">
+        <p>Created: <?= date('M j, Y g:i A', strtotime($task['created_at'])) ?></p>
+
+        <?php if (!empty($task['due_date'])): ?>
+            <p>Due: <strong><?= date('M j, Y', strtotime($task['due_date'])) ?></strong></p>
+        <?php endif; ?>
+
+        <?php if (!empty($task['priority'])): ?>
+            <p>
+                Priority:
+                <span class="priority-badge priority-<?= $task['priority'] ?>">
+                    <?= ucfirst($task['priority']) ?>
+                </span>
+            </p>
+        <?php endif; ?>
+
+        <?php if (!empty($task['attachment'])): ?>
+            <p>
+                Attachment:
+                <a href="<?= htmlspecialchars($task['attachment']) ?>" target="_blank" class="attachment-link">
+                    Download
+                </a>
+            </p>
+        <?php endif; ?>
+    </div>
+
+    <div class="task-actions">
+        <button class="btn btn-secondary toggle-btn" onclick="toggleStatus(<?= $task['id'] ?>)">
+            <?= $task['status'] === 'pending' ? 'Mark Complete' : 'Mark Pending' ?>
+        </button>
+        <button class="btn btn-danger" onclick="deleteTask(<?= $task['id'] ?>)">
+            Delete
+        </button>
+    </div>
+</div>
+
                 <?php endforeach; ?>
             <?php endif; ?>
         </div>
@@ -343,9 +381,11 @@ foreach ($tasks as $task) {
         
         // Toggle task status
         async function toggleStatus(taskId) {
+
             const taskCard = document.getElementById(`task-${taskId}`);
             taskCard.classList.add('loading');
-            
+            const actionBtn = taskCard.querySelector('.toggle-btn');
+
             try {
                 const response = await fetch(`includes/update_task.php?id=${taskId}`, {
                     method: 'POST',
