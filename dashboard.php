@@ -1,32 +1,34 @@
 <?php
 session_start();
-require 'includes/database.php';
+
+require_once 'includes/functions.php';
+requireAuth();
+require_once 'includes/database.php';
 
 $csrf_token = generateCSRFToken();
 
 try {
-    $stmt = $pdo->prepare("SELECT id FROM tasks WHERE user_id = ?");
+    // ✅ Fetch all tasks for the user in one query
+    $stmt = $pdo->prepare("SELECT * FROM tasks WHERE user_id = ?");
     $stmt->execute([$_SESSION['user_id']]);
-    $taskIds = $stmt->fetchAll();
-    
-    $tasks = [];
-    foreach ($taskIds as $taskId) {
-        $stmt = $pdo->prepare("SELECT * FROM tasks WHERE id = ?");
-        $stmt->execute([$taskId['id']]);
-        $tasks[] = $stmt->fetch();
-    }
+    $tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
+    error_log("Task fetch error: " . $e->getMessage());
     $tasks = [];
     $error = 'Error fetching tasks.';
 }
 
+// ✅ Count task statuses accurately
 $pending_count = 0;
 $completed_count = 0;
+
 foreach ($tasks as $task) {
-    if ($task['status'] === 'pending') {
-        $pending_count++;
-    } else {
-        $completed_count++;
+    if (isset($task['status'])) {
+        if ($task['status'] === 'pending') {
+            $pending_count++;
+        } elseif ($task['status'] === 'completed') {
+            $completed_count++;
+        }
     }
 }
 ?>

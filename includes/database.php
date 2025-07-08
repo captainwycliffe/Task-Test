@@ -1,31 +1,20 @@
 <?php
+// Start session if not already started
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Database configuration
 $host = 'localhost';
-$dbname = 'task_manager_app';
+$dbname = 'task_manager';
 $username = 'root';
 $password = '';
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); // Better for debugging
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-} catch(PDOException $e) {
-    die("Database connection failed: " . $e->getMessage() . " on line " . __LINE__);
-}
-
-function generateCSRFToken() {
-    if (!isset($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = md5(rand());
-    }
-    return $_SESSION['csrf_token'];
-}
-
-function verifyCSRFToken($token) {
-    return $_SESSION['csrf_token'] === $token;
-}
-
-function requireAuth() {
-    if (!isset($_SESSION['user_id'])) {
-        header('Location: ' . $_SERVER['HTTP_REFERER'] ?? 'login.php');
-        exit();
-    }
+} catch (PDOException $e) {
+    error_log("Database connection failed: " . $e->getMessage());
+    die("A database error occurred. Please try again later.");
 }

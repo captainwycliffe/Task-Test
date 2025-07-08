@@ -1,6 +1,7 @@
 <?php
 session_start();
-require 'includes/database.php';
+require_once 'includes/database.php';
+require_once 'includes/functions.php';
 
 // Redirect if already logged in
 if (isset($_SESSION['user_id'])) {
@@ -10,29 +11,41 @@ if (isset($_SESSION['user_id'])) {
 
 $error = '';
 
-if ($_POST) {
-    $username = trim($_POST['username']);
-    $password = $_POST['password'];
-    
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // ✅ Sanitize input
+    $username = sanitizeInput($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
+
+    // ✅ Validate input
     if (empty($username) || empty($password)) {
         $error = 'Username and password are required.';
     } else {
         try {
+            // ✅ Fetch user by username
             $stmt = $pdo->prepare("SELECT id, username, password FROM users WHERE username = ?");
             $stmt->execute([$username]);
             $user = $stmt->fetch();
-            
+
+            // ✅ Verify password
             if ($user && password_verify($password, $user['password'])) {
+                // ✅ Prevent session fixation
+                session_regenerate_id(true);
+
+                // ✅ Set session variables
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
-                generateCSRFToken(); // Generate CSRF token for authenticated session
+
+                // ✅ Generate CSRF token for the session
+                generateCSRFToken();
+
                 header('Location: dashboard.php');
                 exit();
             } else {
                 $error = 'Invalid username or password.';
             }
         } catch (PDOException $e) {
-            $error = 'Database error occurred.';
+            error_log("Login error: " . $e->getMessage());
+            $error = 'A database error occurred. Please try again later.';
         }
     }
 }

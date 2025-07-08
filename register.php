@@ -1,6 +1,6 @@
 <?php
-session_start();
-require 'includes/database.php';
+require_once 'includes/functions.php';
+require_once 'includes/database.php';
 
 // Redirect if already logged in
 if (isset($_SESSION['user_id'])) {
