@@ -278,6 +278,19 @@ foreach ($tasks as $task) {
                     <label for="description">Description:</label>
                     <textarea id="description" name="description" rows="3" placeholder="Optional task description"></textarea>
                 </div>
+
+                 <label for="due_date">Due Date:</label>
+    <input type="date" name="due_date" id="due_date">
+
+    <label for="priority">Priority:</label>
+    <select name="priority" id="priority">
+        <option value="low">Low</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High</option>
+    </select>
+
+    <label for="attachment">Attach File:</label>
+    <input type="file" name="attachment" id="attachment" accept=".pdf,.jpg,.png,.doc,.docx">
                 
                 <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
                 <button type="submit" class="btn btn-primary">Add Task</button>
@@ -312,13 +325,14 @@ foreach ($tasks as $task) {
                         </div>
                         
                         <div class="task-actions">
-                            <button class="btn btn-secondary" onclick="toggleStatus(<?= $task['id'] ?>)">
-                                <?= $task['status'] === 'pending' ? 'Mark Complete' : 'Mark Pending' ?>
-                            </button>
-                            <button class="btn btn-danger" onclick="deleteTask(<?= $task['id'] ?>)">
-                                Delete
-                            </button>
-                        </div>
+    <button class="btn btn-secondary toggle-btn" onclick="toggleStatus(<?= $task['id'] ?>)">
+        <?= $task['status'] === 'pending' ? 'Mark Complete' : 'Mark Pending' ?>
+    </button>
+    <button class="btn btn-danger" onclick="deleteTask(<?= $task['id'] ?>)">
+        Delete
+    </button>
+</div>
+
                     </div>
                 <?php endforeach; ?>
             <?php endif; ?>
@@ -345,9 +359,11 @@ foreach ($tasks as $task) {
         
         // Toggle task status
         async function toggleStatus(taskId) {
+
             const taskCard = document.getElementById(`task-${taskId}`);
             taskCard.classList.add('loading');
-            
+            const actionBtn = taskCard.querySelector('.toggle-btn');
+
             try {
                 const response = await fetch(`includes/update_task.php?id=${taskId}`, {
                     method: 'POST',
